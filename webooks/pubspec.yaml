@@ -21,13 +21,13 @@ dependencies:
   flutter_secure_storage: ^8.0.0
 
   kakao_flutter_sdk_user: ^1.6.1
-  googke_sign_in: '>=6.0.0 <7.0.0'
+  google_sign_in: '>=6.0.0 <7.0.0'
 
   flutter_svg: ^2.2.3
-  cache_network_image: ^3.4.1
+  cached_network_image: ^3.4.1
   shimmer: ^3.0.0
 
-  intl: ^20.2
+  intl: ^0.20.2
   url_launcher: ^6.1.10
 
   cupertino_icons: ^1.0.8
