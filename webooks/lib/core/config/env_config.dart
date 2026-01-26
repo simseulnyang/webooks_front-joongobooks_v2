@@ -3,8 +3,21 @@ import 'package:flutter_dotenv/flutter_dotenv.dart';
 class EnvConfig {
   EnvConfig._();
 
-  static String get apiBaseUrl =>
-      dotenv.env['API_BASE_URL'] ?? 'http://10.0.2.2:8000/api/vi';
+  static String get apiBaseUrl {
+    final url = dotenv.env['API_BASE_URL'];
+    if (url == null || url.isEmpty) {
+      throw Exception('API_BASE_URL이 .env 파일에 설정되지 않았습니다.');
+    }
+    return url;
+  }
+
+  static String get wsBaseUrl {
+    final url = dotenv.env['WS_BASE_URL'];
+    if (url == null || url.isEmpty) {
+      throw Exception('WS_BASE_URL이 .env 파일에 설정되지 않았습니다.');
+    }
+    return url;
+  }
 
   static String get kakaoNativeAppKey {
     return dotenv.env['KAKAO_NATIVE_APP_KEY'] ?? '';
