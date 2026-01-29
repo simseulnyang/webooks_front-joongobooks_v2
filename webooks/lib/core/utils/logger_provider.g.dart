@@ -12,7 +12,7 @@ part of 'logger_provider.dart';
 /// 앱 전역에서 일관된 로그 출력을 위해 사용
 
 @ProviderFor(logger)
-const loggerProvider = LoggerProvider._();
+final loggerProvider = LoggerProvider._();
 
 /// Logger Provider
 /// 앱 전역에서 일관된 로그 출력을 위해 사용
@@ -21,7 +21,7 @@ final class LoggerProvider extends $FunctionalProvider<Logger, Logger, Logger>
     with $Provider<Logger> {
   /// Logger Provider
   /// 앱 전역에서 일관된 로그 출력을 위해 사용
-  const LoggerProvider._()
+  LoggerProvider._()
     : super(
         from: null,
         argument: null,

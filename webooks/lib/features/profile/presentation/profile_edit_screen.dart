@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../../features/auth/application/auth_provider.dart';
 import '../../../shared/theme/app_colors.dart';
-import '../../../shared/theme/app_text_styles.dart';
 import '../../../shared/widgets/app_button.dart';
 import '../../../shared/widgets/app_loading.dart';
 
@@ -17,7 +17,6 @@ class ProfileEditScreen extends ConsumerStatefulWidget {
 class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _usernameController;
-  bool _isLoading = false;
 
   @override
   void initState() {
@@ -50,7 +49,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
 
     return Scaffold(
       appBar: AppBar(title: const Text('프로필 수정')),
-      body: _isLoading
+      body: authState.isLoading
           ? const AppLoading(message: '프로필을 수정하는 중...')
           : Form(
               key: _formKey,
@@ -91,7 +90,8 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                                 size: 20,
                               ),
                               onPressed: () {
-                                // TODO: 이미지 선택
+                                // TODO: 이미지 선택 및 업로드 기능
+                                // 이미지 피커 라이브러리 필요 (image_picker)
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
                                     content: Text('이미지 변경 기능은 추후 구현 예정입니다.'),
@@ -113,7 +113,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                       labelText: '닉네임',
                       hintText: '닉네임을 입력하세요 (2-20자)',
                     ),
-                    validator: (value) {
+                    validator: (String? value) {
                       if (value == null || value.isEmpty) {
                         return '닉네임을 입력해주세요';
                       }
@@ -142,7 +142,7 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
                   AppButton(
                     text: '수정하기',
                     onPressed: _handleSubmit,
-                    isLoading: _isLoading,
+                    isLoading: authState.isLoading,
                   ),
                 ],
               ),
@@ -150,26 +150,51 @@ class _ProfileEditScreenState extends ConsumerState<ProfileEditScreen> {
     );
   }
 
-  void _handleSubmit() {
-    if (_formKey.currentState!.validate()) {
-      // TODO: 프로필 수정 API 연결
-      setState(() => _isLoading = true);
-
-      // 임시: 2초 후 완료
-      Future.delayed(const Duration(seconds: 2), () {
-        if (mounted) {
-          setState(() => _isLoading = false);
-
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('프로필이 수정되었습니다.'),
-              backgroundColor: AppColors.primary,
-            ),
-          );
-
-          Navigator.pop(context);
-        }
-      });
+  void _handleSubmit() async {
+    if (!_formKey.currentState!.validate()) {
+      return;
     }
+
+    final newUsername = _usernameController.text.trim();
+    final currentUsername = ref.read(authProvider).user?.username;
+
+    // 닉네임이 변경되지 않았으면 리턴
+    if (newUsername == currentUsername) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('변경된 내용이 없습니다.'),
+          backgroundColor: AppColors.warning,
+        ),
+      );
+      return;
+    }
+
+    // 프로필 수정 실행
+    await ref.read(authProvider.notifier).updateProfile(username: newUsername);
+
+    if (!mounted) return;
+
+    final authState = ref.read(authProvider);
+
+    // 에러 처리
+    if (authState.error != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(authState.error!),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
+
+    // 성공
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('프로필이 수정되었습니다.'),
+        backgroundColor: AppColors.success,
+      ),
+    );
+
+    Navigator.pop(context);
   }
 }

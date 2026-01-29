@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../../../features/auth/application/auth_provider.dart';
 import '../../../../routes/app_routes.dart';
 import '../../../../shared/theme/app_colors.dart';
@@ -8,8 +9,9 @@ import '../../../../shared/widgets/app_loading.dart';
 import '../../../../shared/widgets/empty_view.dart';
 import '../../../../shared/widgets/error_view.dart';
 import '../../../../shared/widgets/app_button.dart';
+import '../../application/book_provider.dart';
+import '../widgets/book_card.dart';
 
-/// 좋아요한 책 목록 화면 (좋아요 탭)
 class FavoriteBookListScreen extends ConsumerStatefulWidget {
   const FavoriteBookListScreen({super.key});
 
@@ -20,10 +22,25 @@ class FavoriteBookListScreen extends ConsumerStatefulWidget {
 
 class _FavoriteBookListScreenState
     extends ConsumerState<FavoriteBookListScreen> {
+  final ScrollController _scrollController = ScrollController();
+
   @override
   void initState() {
     super.initState();
-    // TODO: 좋아요 목록 로드
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent * 0.8) {
+      ref.read(favoriteBookListProvider.notifier).loadMoreFavorites();
+    }
   }
 
   @override
@@ -38,7 +55,6 @@ class _FavoriteBookListScreenState
     );
   }
 
-  /// 로그인 전 화면
   Widget _buildLoggedOutView(BuildContext context) {
     return Center(
       child: Padding(
@@ -77,36 +93,32 @@ class _FavoriteBookListScreenState
     );
   }
 
-  /// 로그인 후 화면
   Widget _buildLoggedInView() {
+    final favoriteState = ref.watch(favoriteBookListProvider);
+
     return RefreshIndicator(
       onRefresh: () async {
-        // TODO: 새로고침
+        await ref.read(favoriteBookListProvider.notifier).refresh();
       },
-      child: _buildBody(),
+      child: _buildBody(favoriteState),
     );
   }
 
-  Widget _buildBody() {
-    // TODO: Provider 연결
-    final isLoading = false;
-    final hasError = false;
-    final favorites = <dynamic>[];
-
-    if (isLoading) {
+  Widget _buildBody(favoriteState) {
+    if (favoriteState.isLoading && favoriteState.books.isEmpty) {
       return const AppLoading(message: '좋아요 목록을 불러오는 중...');
     }
 
-    if (hasError) {
+    if (favoriteState.error != null && favoriteState.books.isEmpty) {
       return ErrorView(
-        message: '좋아요 목록을 불러오는데 실패했습니다.',
+        message: favoriteState.error!,
         onRetry: () {
-          // TODO: 재시도
+          ref.read(favoriteBookListProvider.notifier).loadFavorites();
         },
       );
     }
 
-    if (favorites.isEmpty) {
+    if (favoriteState.books.isEmpty) {
       return const EmptyView(
         message: '좋아요한 책이 없습니다.',
         icon: Icons.favorite_border,
@@ -114,18 +126,23 @@ class _FavoriteBookListScreenState
     }
 
     return ListView.builder(
+      controller: _scrollController,
       padding: const EdgeInsets.all(16),
-      itemCount: favorites.length,
+      itemCount: favoriteState.books.length + (favoriteState.hasMore ? 1 : 0),
       itemBuilder: (context, index) {
-        // TODO: BookCard 위젯으로 교체
-        return Card(
-          margin: const EdgeInsets.only(bottom: 16),
-          child: ListTile(
-            leading: const Icon(Icons.favorite, color: Colors.red),
-            title: Text('좋아요한 책 ${index + 1}'),
-            subtitle: Text('₩ 15,000'),
-          ),
-        );
+        if (index == favoriteState.books.length) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: Center(
+              child: favoriteState.isLoadingMore
+                  ? const CircularProgressIndicator()
+                  : const SizedBox.shrink(),
+            ),
+          );
+        }
+
+        final book = favoriteState.books[index];
+        return BookCard(book: book, index: index);
       },
     );
   }

@@ -256,4 +256,45 @@ class Auth extends _$Auth {
       rethrow;
     }
   }
+
+  Future<void> updateProfile({String? username, String? profileImage}) async {
+    state = state.copyWith(isLoading: true, error: null);
+
+    try {
+      final userApi = ref.read(authApiProvider);
+      final updatedUser = await userApi.updateProfile(
+        username: username,
+        profileImage: profileImage,
+      );
+
+      state = state.copyWith(user: updatedUser, isLoading: false);
+
+      final logger = ref.read(loggerProvider);
+      logger.d('✅ 프로필 수정 성공: ${updatedUser.username}');
+    } on DioException catch (e) {
+      final logger = ref.read(loggerProvider);
+      logger.e('❌ 프로필 수정 실패', error: e);
+
+      final apiError = ApiError.fromDioException(e);
+
+      // 400 에러 - 유효성 검사 실패
+      if (apiError.statusCode == 400) {
+        final usernameError = apiError.errors?['username'] as String?;
+        if (usernameError != null) {
+          state = state.copyWith(isLoading: false, error: usernameError);
+          return;
+        }
+      }
+
+      state = state.copyWith(isLoading: false, error: apiError.message);
+    } catch (e, stackTrace) {
+      final logger = ref.read(loggerProvider);
+      logger.e('❌ 프로필 수정 중 예상치 못한 오류', error: e, stackTrace: stackTrace);
+
+      state = state.copyWith(
+        isLoading: false,
+        error: '프로필 수정 중 오류가 발생했습니다. 다시 시도해주세요.',
+      );
+    }
+  }
 }

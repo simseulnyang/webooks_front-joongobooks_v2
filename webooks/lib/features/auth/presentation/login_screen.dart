@@ -113,88 +113,33 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     setState(() => _isKakaoLoading = true);
 
     try {
-      print('🔍 [Kakao Login] 시작');
-
-      // 카카오톡 설치 여부 확인
       bool isInstalled = await kakao.isKakaoTalkInstalled();
-      print('🔍 [Kakao Login] 카카오톡 설치 여부: $isInstalled');
 
       kakao.OAuthToken token;
       if (isInstalled) {
-        print('🔍 [Kakao Login] 카카오톡으로 로그인 시도...');
         token = await kakao.UserApi.instance.loginWithKakaoTalk();
       } else {
-        print('🔍 [Kakao Login] 카카오 계정으로 로그인 시도...');
         token = await kakao.UserApi.instance.loginWithKakaoAccount();
       }
 
-      print('✅ [Kakao Login] 토큰 획득 성공');
-      print(
-        '🔍 [Kakao Login] Access Token: ${token.accessToken.substring(0, 20)}...',
-      );
-      print('🔍 [Kakao Login] 서버로 전송 중...');
-
-      // 서버에 access_token 전송
       await ref.read(authProvider.notifier).loginWithKakao(token.accessToken);
-
-      print('✅ [Kakao Login] 서버 인증 완료');
     } on kakao.KakaoException catch (e) {
-      print('❌ [Kakao Login] KakaoException 발생');
-      print('에러 코드: ${e.toString()}');
-
       if (mounted) {
-        // 사용자가 로그인 취소한 경우
-        if (e.toString().contains('CANCELED') ||
-            e.toString().contains('statusCode: 302')) {
-          print('⚠️ [Kakao Login] 사용자 취소');
+        // 사용자가 로그인 취소
+        if (e.toString().contains('CANCELED')) {
           setState(() => _isKakaoLoading = false);
           return;
         }
 
-        // 그 외 에러
-        _showErrorSnackBar('카카오 로그인 실패: ${e.message ?? "알 수 없는 오류"}');
+        _showErrorSnackBar('카카오 로그인 실패: ${e.message}');
         setState(() => _isKakaoLoading = false);
       }
-    } catch (e, stackTrace) {
-      print('❌ [Kakao Login] 최종 에러');
-      print('에러 타입: ${e.runtimeType}');
-      print('에러 내용: $e');
-      print('스택 트레이스: $stackTrace');
-
+    } catch (e) {
       if (mounted) {
         _showErrorSnackBar('카카오 로그인 중 오류가 발생했습니다.');
         setState(() => _isKakaoLoading = false);
       }
     }
-
-    // try {
-    //   bool isInstalled = await kakao.isKakaoTalkInstalled();
-
-    //   kakao.OAuthToken token;
-    //   if (isInstalled) {
-    //     token = await kakao.UserApi.instance.loginWithKakaoTalk();
-    //   } else {
-    //     token = await kakao.UserApi.instance.loginWithKakaoAccount();
-    //   }
-
-    //   await ref.read(authProvider.notifier).loginWithKakao(token.accessToken);
-    // } on kakao.KakaoException catch (e) {
-    //   if (mounted) {
-    //     // 사용자가 로그인 취소
-    //     if (e.toString().contains('CANCELED')) {
-    //       setState(() => _isKakaoLoading = false);
-    //       return;
-    //     }
-
-    //     _showErrorSnackBar('카카오 로그인 실패: ${e.message}');
-    //     setState(() => _isKakaoLoading = false);
-    //   }
-    // } catch (e) {
-    //   if (mounted) {
-    //     _showErrorSnackBar('카카오 로그인 중 오류가 발생했습니다.');
-    //     setState(() => _isKakaoLoading = false);
-    //   }
-    // }
   }
 
   Future<void> _handleGoogleLogin() async {

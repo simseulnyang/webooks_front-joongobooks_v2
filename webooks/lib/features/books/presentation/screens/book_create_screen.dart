@@ -8,35 +8,30 @@ import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/theme/app_text_styles.dart';
 import '../../../../shared/widgets/app_button.dart';
 import '../../../../shared/widgets/app_loading.dart';
-import '../../../../shared/widgets/error_view.dart';
 import '../../application/book_provider.dart';
 import '../../data/book_api.dart';
 
-/// 책 수정 화면
-class BookEditScreen extends ConsumerStatefulWidget {
-  final int bookId;
-
-  const BookEditScreen({super.key, required this.bookId});
+/// 책 등록 화면
+class BookCreateScreen extends ConsumerStatefulWidget {
+  const BookCreateScreen({super.key});
 
   @override
-  ConsumerState<BookEditScreen> createState() => _BookEditScreenState();
+  ConsumerState<BookCreateScreen> createState() => _BookCreateScreenState();
 }
 
-class _BookEditScreenState extends ConsumerState<BookEditScreen> {
+class _BookCreateScreenState extends ConsumerState<BookCreateScreen> {
   final _formKey = GlobalKey<FormState>();
-  late TextEditingController _titleController;
-  late TextEditingController _authorController;
-  late TextEditingController _publisherController;
-  late TextEditingController _originalPriceController;
-  late TextEditingController _sellingPriceController;
-  late TextEditingController _detailInfoController;
+  final _titleController = TextEditingController();
+  final _authorController = TextEditingController();
+  final _publisherController = TextEditingController();
+  final _originalPriceController = TextEditingController();
+  final _sellingPriceController = TextEditingController();
+  final _detailInfoController = TextEditingController();
 
   String _selectedCategory = 'Novel';
   String _selectedCondition = '최상';
-  String _selectedSaleCondition = 'For Sale';
   File? _selectedImage;
   bool _isSubmitting = false;
-  bool _isInitialized = false;
 
   // 카테고리 옵션 (영문 -> 한글)
   final Map<String, String> _categoryOptions = {
@@ -56,24 +51,6 @@ class _BookEditScreenState extends ConsumerState<BookEditScreen> {
   // 책 상태 옵션
   final List<String> _conditionOptions = ['최상', '상', '중', '하'];
 
-  // 판매 상태 옵션 (영문 -> 한글)
-  final Map<String, String> _saleConditionOptions = {
-    'For Sale': '판매중',
-    'Reserved': '예약중',
-    'Sold Out': '판매완료',
-  };
-
-  @override
-  void initState() {
-    super.initState();
-    _titleController = TextEditingController();
-    _authorController = TextEditingController();
-    _publisherController = TextEditingController();
-    _originalPriceController = TextEditingController();
-    _sellingPriceController = TextEditingController();
-    _detailInfoController = TextEditingController();
-  }
-
   @override
   void dispose() {
     _titleController.dispose();
@@ -85,61 +62,19 @@ class _BookEditScreenState extends ConsumerState<BookEditScreen> {
     super.dispose();
   }
 
-  /// 기존 책 정보로 폼 초기화
-  void _initializeForm(book) {
-    if (_isInitialized) return;
-
-    _titleController.text = book.title;
-    _authorController.text = book.author;
-    _publisherController.text = book.publisher;
-    _originalPriceController.text = book.originalPrice.toString();
-    _sellingPriceController.text = book.sellingPrice.toString();
-    _detailInfoController.text = book.detailInfo;
-    _selectedCategory = book.category;
-    _selectedCondition = book.condition;
-    _selectedSaleCondition = book.saleCondition;
-
-    _isInitialized = true;
-  }
-
   @override
   Widget build(BuildContext context) {
-    final detailState = ref.watch(bookDetailProvider(widget.bookId));
-
-    // 로딩 중
-    if (detailState.isLoading) {
-      return const Scaffold(body: AppLoading(message: '책 정보를 불러오는 중...'));
-    }
-
-    // 에러
-    if (detailState.error != null || detailState.book == null) {
-      return Scaffold(
-        appBar: AppBar(title: const Text('책 수정')),
-        body: ErrorView(
-          message: detailState.error ?? '책 정보를 찾을 수 없습니다.',
-          onRetry: () {
-            ref
-                .read(bookDetailProvider(widget.bookId).notifier)
-                .loadBookDetail();
-          },
-        ),
-      );
-    }
-
-    // 폼 초기화
-    _initializeForm(detailState.book);
-
     return Scaffold(
-      appBar: AppBar(title: const Text('책 수정')),
+      appBar: AppBar(title: const Text('책 등록')),
       body: _isSubmitting
-          ? const AppLoading(message: '책을 수정하는 중...')
+          ? const AppLoading(message: '책을 등록하는 중...')
           : Form(
               key: _formKey,
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
-                  // 책 이미지
-                  _buildImageSection(detailState.book!.bookImage),
+                  // 책 이미지 선택
+                  _buildImageSection(),
                   const SizedBox(height: 24),
 
                   // 제목
@@ -283,29 +218,6 @@ class _BookEditScreenState extends ConsumerState<BookEditScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // 판매 상태
-                  DropdownButtonFormField<String>(
-                    initialValue: _selectedSaleCondition,
-                    decoration: const InputDecoration(
-                      labelText: '판매 상태',
-                      prefixIcon: Icon(Icons.shopping_cart),
-                    ),
-                    items: _saleConditionOptions.entries
-                        .map(
-                          (entry) => DropdownMenuItem(
-                            value: entry.key,
-                            child: Text(entry.value),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedSaleCondition = value!;
-                      });
-                    },
-                  ),
-                  const SizedBox(height: 16),
-
                   // 상세 정보
                   TextFormField(
                     controller: _detailInfoController,
@@ -328,9 +240,9 @@ class _BookEditScreenState extends ConsumerState<BookEditScreen> {
                   ),
                   const SizedBox(height: 32),
 
-                  // 수정 버튼
+                  // 등록 버튼
                   AppButton(
-                    text: '수정하기',
+                    text: '등록하기',
                     onPressed: _handleSubmit,
                     isLoading: _isSubmitting,
                   ),
@@ -340,7 +252,7 @@ class _BookEditScreenState extends ConsumerState<BookEditScreen> {
     );
   }
 
-  Widget _buildImageSection(String? currentImageUrl) {
+  Widget _buildImageSection() {
     return GestureDetector(
       onTap: _pickImage,
       child: Container(
@@ -359,39 +271,25 @@ class _BookEditScreenState extends ConsumerState<BookEditScreen> {
                   width: double.infinity,
                 ),
               )
-            : currentImageUrl != null && currentImageUrl.isNotEmpty
-            ? ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.network(
-                  currentImageUrl,
-                  fit: BoxFit.cover,
-                  width: double.infinity,
-                  errorBuilder: (context, error, stackTrace) {
-                    return _buildPlaceholder();
-                  },
+            : Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.add_photo_alternate_outlined,
+                      size: 60,
+                      color: AppColors.textHint,
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '사진 추가 (선택)',
+                      style: AppTextStyles.bodyMedium.copyWith(
+                        color: AppColors.textHint,
+                      ),
+                    ),
+                  ],
                 ),
-              )
-            : _buildPlaceholder(),
-      ),
-    );
-  }
-
-  Widget _buildPlaceholder() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(
-            Icons.add_photo_alternate_outlined,
-            size: 60,
-            color: AppColors.textHint,
-          ),
-          const SizedBox(height: 8),
-          Text(
-            '사진 변경',
-            style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textHint),
-          ),
-        ],
+              ),
       ),
     );
   }
@@ -424,7 +322,6 @@ class _BookEditScreenState extends ConsumerState<BookEditScreen> {
         'publisher': _publisherController.text.trim(),
         'category': _selectedCategory,
         'condition': _selectedCondition,
-        'sale_condition': _selectedSaleCondition,
         'original_price': int.parse(
           _originalPriceController.text.replaceAll(',', ''),
         ),
@@ -434,19 +331,18 @@ class _BookEditScreenState extends ConsumerState<BookEditScreen> {
         'detail_info': _detailInfoController.text.trim(),
       };
 
-      // TODO: 이미지가 변경되었으면 multipart/form-data로 전송 필요
+      // TODO: 이미지가 있으면 multipart/form-data로 전송 필요
+      // 현재는 JSON만 전송
       final bookApi = ref.read(bookApiProvider);
-      await bookApi.updateBook(widget.bookId, bookData);
+      await bookApi.createBook(bookData);
 
       if (mounted) {
-        // 상세 화면 새로고침
-        ref.read(bookDetailProvider(widget.bookId).notifier).loadBookDetail();
-        // 목록 새로고침
+        // 책 목록 새로고침
         ref.read(bookListProvider.notifier).refresh();
 
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('책이 성공적으로 수정되었습니다!'),
+            content: Text('책이 성공적으로 등록되었습니다!'),
             backgroundColor: AppColors.success,
           ),
         );
@@ -457,7 +353,7 @@ class _BookEditScreenState extends ConsumerState<BookEditScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('책 수정 실패: $e'),
+            content: Text('책 등록 실패: $e'),
             backgroundColor: AppColors.error,
           ),
         );

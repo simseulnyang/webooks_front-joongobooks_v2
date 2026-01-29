@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../../features/auth/application/auth_provider.dart';
 import '../../../../shared/theme/app_colors.dart';
 import '../../../../shared/theme/app_text_styles.dart';
 import '../../../../shared/widgets/app_loading.dart';
+import '../../../../shared/widgets/error_view.dart';
+import '../../application/chat_room_provider.dart';
+import '../../application/chat_state.dart'; // ✅ ChatRoomState 타입 사용
+import '../../domain/models/chat_room_detail.dart'; // ✅ room 타입 명시(선택)
+import '../widgets/message_bubble.dart';
 
-/// 1:1 채팅방 화면
 class ChatRoomScreen extends ConsumerStatefulWidget {
   final int roomId;
   final String otherUserName;
@@ -26,61 +32,97 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
   @override
   void initState() {
     super.initState();
-    // TODO: WebSocket 연결 및 과거 메시지 로드
+
+    // ✅ 화면 진입 후 1프레임 뒤에 refresh 트리거 (provider lifecycle 안전)
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final notifier = ref.read(chatRoomProvider(widget.roomId).notifier);
+      await notifier.refresh();
+    });
   }
 
   @override
   void dispose() {
     _messageController.dispose();
     _scrollController.dispose();
-    // TODO: WebSocket 연결 해제
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final ChatRoomState chatState = ref.watch(chatRoomProvider(widget.roomId));
+    final authState = ref.watch(authProvider);
+
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.otherUserName),
+        title: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(widget.otherUserName),
+            if (!chatState.isConnected)
+              Text(
+                '연결 중...',
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: AppColors.textHint,
+                ),
+              ),
+          ],
+        ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.more_vert),
-            onPressed: () {
-              // TODO: 채팅방 설정
-            },
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: Center(
+              child: Container(
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  color: chatState.isConnected
+                      ? AppColors.success
+                      : AppColors.error,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
           ),
         ],
       ),
       body: Column(
         children: [
-          // 메시지 리스트
-          Expanded(
-            child: _buildMessageList(),
-          ),
-
-          // 메시지 입력창
-          _buildMessageInput(),
+          Expanded(child: _buildMessageList(chatState, authState.user?.id)),
+          _buildMessageInput(chatState),
         ],
       ),
     );
   }
 
-  Widget _buildMessageList() {
-    // TODO: Provider 연결
-    final isLoading = false;
-    final messages = <Map<String, dynamic>>[];
-
-    if (isLoading) {
+  Widget _buildMessageList(ChatRoomState chatState, int? currentUserId) {
+    // 1) 초기 로딩
+    if (chatState.isLoading && chatState.messages.isEmpty) {
       return const AppLoading(message: '메시지를 불러오는 중...');
     }
 
-    if (messages.isEmpty) {
+    // 2) 에러
+    if (chatState.error != null && chatState.messages.isEmpty) {
+      return ErrorView(
+        message: chatState.error!,
+        onRetry: () {
+          ref.read(chatRoomProvider(widget.roomId).notifier).refresh();
+        },
+      );
+    }
+
+    // ✅ room(상세) 아직 안 들어온 경우 방어
+    final ChatRoomDetail? room = chatState.room;
+    if (room == null) {
+      // 메시지가 이미 있는데 room만 null이면 이상하긴 하지만, 안전하게 처리
+      return const AppLoading(message: '채팅방 정보를 불러오는 중...');
+    }
+
+    // 3) 빈 메시지
+    if (chatState.messages.isEmpty) {
       return Center(
         child: Text(
           '메시지를 입력해보세요!',
-          style: AppTextStyles.bodyMedium.copyWith(
-            color: AppColors.textHint,
-          ),
+          style: AppTextStyles.bodyMedium.copyWith(color: AppColors.textHint),
         ),
       );
     }
@@ -88,88 +130,30 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
     return ListView.builder(
       controller: _scrollController,
       padding: const EdgeInsets.all(16),
-      itemCount: messages.length,
+      itemCount: chatState.messages.length,
       itemBuilder: (context, index) {
-        final message = messages[index];
-        final isMine = message['isMine'] ?? false;
+        final message = chatState.messages[index];
 
-        return _buildMessageBubble(
-          message: message['text'] ?? '',
+        final isMine =
+            (currentUserId != null) && (message.sender == currentUserId);
+
+        return MessageBubble(
+          message: message,
           isMine: isMine,
-          timestamp: message['timestamp'] ?? '',
+          room: room, // ✅ ChatRoomDetail 전달
         );
       },
     );
   }
 
-  Widget _buildMessageBubble({
-    required String message,
-    required bool isMine,
-    required String timestamp,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Row(
-        mainAxisAlignment:
-            isMine ? MainAxisAlignment.end : MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.end,
-        children: [
-          if (!isMine) ...[
-            const CircleAvatar(
-              radius: 16,
-              child: Icon(Icons.person, size: 20),
-            ),
-            const SizedBox(width: 8),
-          ],
-          if (isMine && timestamp.isNotEmpty) ...[
-            Text(
-              timestamp,
-              style: AppTextStyles.bodySmall.copyWith(
-                color: AppColors.textHint,
-              ),
-            ),
-            const SizedBox(width: 8),
-          ],
-          Flexible(
-            child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 10,
-              ),
-              decoration: BoxDecoration(
-                color: isMine ? AppColors.primary : AppColors.background,
-                borderRadius: BorderRadius.circular(18),
-              ),
-              child: Text(
-                message,
-                style: AppTextStyles.bodyMedium.copyWith(
-                  color: isMine ? Colors.white : AppColors.textPrimary,
-                ),
-              ),
-            ),
-          ),
-          if (!isMine && timestamp.isNotEmpty) ...[
-            const SizedBox(width: 8),
-            Text(
-              timestamp,
-              style: AppTextStyles.bodySmall.copyWith(
-                color: AppColors.textHint,
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMessageInput() {
+  Widget _buildMessageInput(ChatRoomState chatState) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: AppColors.surface,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: Colors.black.withValues(alpha: 0.05),
             blurRadius: 10,
             offset: const Offset(0, -2),
           ),
@@ -178,12 +162,13 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
       child: SafeArea(
         child: Row(
           children: [
-            // 입력 필드
             Expanded(
               child: TextField(
                 controller: _messageController,
                 decoration: InputDecoration(
-                  hintText: '메시지를 입력하세요',
+                  hintText: chatState.isConnected
+                      ? '메시지를 입력하세요'
+                      : '연결 중입니다… (잠시만요)',
                   hintStyle: AppTextStyles.bodyMedium.copyWith(
                     color: AppColors.textHint,
                   ),
@@ -200,20 +185,21 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
                 ),
                 maxLines: null,
                 textInputAction: TextInputAction.send,
-                onSubmitted: (_) => _sendMessage(),
+                enabled: true,
+                onSubmitted: (_) => _sendMessage(chatState),
               ),
             ),
             const SizedBox(width: 8),
-
-            // 전송 버튼
             Container(
-              decoration: const BoxDecoration(
-                color: AppColors.primary,
+              decoration: BoxDecoration(
+                color: chatState.isConnected
+                    ? AppColors.primary
+                    : AppColors.textHint,
                 shape: BoxShape.circle,
               ),
               child: IconButton(
                 icon: const Icon(Icons.send, color: Colors.white),
-                onPressed: _sendMessage,
+                onPressed: () => _sendMessage(chatState),
               ),
             ),
           ],
@@ -222,19 +208,25 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
     );
   }
 
-  void _sendMessage() {
+  void _sendMessage(ChatRoomState chatState) {
     final text = _messageController.text.trim();
     if (text.isEmpty) return;
 
-    // TODO: 메시지 전송 로직
+    if (!chatState.isConnected) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('아직 연결 중입니다. 잠시 후 다시 시도해주세요.')),
+      );
+      return;
+    }
+
+    ref.read(chatRoomProvider(widget.roomId).notifier).sendMessage(text);
     _messageController.clear();
 
-    // 스크롤을 맨 아래로
     Future.delayed(const Duration(milliseconds: 100), () {
       if (_scrollController.hasClients) {
         _scrollController.animateTo(
           _scrollController.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 300),
+          duration: const Duration(milliseconds: 250),
           curve: Curves.easeOut,
         );
       }

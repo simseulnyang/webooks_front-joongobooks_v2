@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
 import '../../../../features/auth/application/auth_provider.dart';
 import '../../../../routes/app_routes.dart';
 import '../../../../shared/theme/app_colors.dart';
@@ -8,6 +9,8 @@ import '../../../../shared/widgets/app_loading.dart';
 import '../../../../shared/widgets/empty_view.dart';
 import '../../../../shared/widgets/error_view.dart';
 import '../../../../shared/widgets/app_button.dart';
+import '../../application/chat_room_list_provider.dart';
+import '../widgets/chat_room_tile.dart';
 
 /// 채팅 목록 화면 (채팅 탭)
 class ChatListScreen extends ConsumerStatefulWidget {
@@ -18,10 +21,26 @@ class ChatListScreen extends ConsumerStatefulWidget {
 }
 
 class _ChatListScreenState extends ConsumerState<ChatListScreen> {
+  final ScrollController _scrollController = ScrollController();
+
   @override
   void initState() {
     super.initState();
-    // TODO: 채팅방 목록 로드
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  /// 무한 스크롤
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent * 0.8) {
+      ref.read(chatRoomListProvider.notifier).loadMoreRooms();
+    }
   }
 
   @override
@@ -50,10 +69,8 @@ class _ChatListScreenState extends ConsumerState<ChatListScreen> {
               color: AppColors.textHint,
             ),
             const SizedBox(height: 24),
-
             Text('로그인이 필요합니다', style: AppTextStyles.headlineMedium),
             const SizedBox(height: 8),
-
             Text(
               '채팅을 하려면 로그인 해주세요',
               style: AppTextStyles.bodyMedium.copyWith(
@@ -61,7 +78,6 @@ class _ChatListScreenState extends ConsumerState<ChatListScreen> {
               ),
             ),
             const SizedBox(height: 32),
-
             AppButton(
               text: '로그인하기',
               onPressed: () {
@@ -77,57 +93,68 @@ class _ChatListScreenState extends ConsumerState<ChatListScreen> {
 
   /// 로그인 후 화면
   Widget _buildLoggedInView() {
-    return _buildBody();
+    return RefreshIndicator(
+      onRefresh: () async {
+        await ref.read(chatRoomListProvider.notifier).refresh();
+      },
+      child: _buildBody(),
+    );
   }
 
   Widget _buildBody() {
-    // TODO: Provider 연결
-    final isLoading = false;
-    final hasError = false;
-    final chatRooms = <dynamic>[];
+    final chatListState = ref.watch(chatRoomListProvider);
 
-    if (isLoading) {
+    // 초기 로딩
+    if (chatListState.isLoading && chatListState.rooms.isEmpty) {
       return const AppLoading(message: '채팅 목록을 불러오는 중...');
     }
 
-    if (hasError) {
+    // 에러
+    if (chatListState.error != null && chatListState.rooms.isEmpty) {
       return ErrorView(
-        message: '채팅 목록을 불러오는데 실패했습니다.',
+        message: chatListState.error!,
         onRetry: () {
-          // TODO: 재시도
+          ref.read(chatRoomListProvider.notifier).refresh();
         },
       );
     }
 
-    if (chatRooms.isEmpty) {
+    // 빈 목록
+    if (chatListState.rooms.isEmpty) {
       return const EmptyView(
         message: '진행 중인 채팅이 없습니다.',
         icon: Icons.chat_bubble_outline,
       );
     }
 
+    // 채팅방 목록
     return ListView.separated(
-      itemCount: chatRooms.length,
+      controller: _scrollController,
+      itemCount: chatListState.rooms.length + (chatListState.hasMore ? 1 : 0),
       separatorBuilder: (context, index) => const Divider(height: 1),
       itemBuilder: (context, index) {
-        // TODO: ChatTile 위젯으로 교체
-        return ListTile(
-          leading: const CircleAvatar(child: Icon(Icons.person)),
-          title: Text('사용자 ${index + 1}', style: AppTextStyles.titleMedium),
-          subtitle: Text(
-            '마지막 메시지 내용...',
-            style: AppTextStyles.bodySmall,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          ),
+        // 마지막 아이템 - 로딩 인디케이터
+        if (index == chatListState.rooms.length) {
+          return Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            child: Center(
+              child: chatListState.isLoadingMore
+                  ? const CircularProgressIndicator()
+                  : const SizedBox.shrink(),
+            ),
+          );
+        }
+
+        // 채팅방 타일
+        final room = chatListState.rooms[index];
+        final otherUserName = room.otherUser?.username ?? '알 수 없음';
+        return ChatRoomTile(
+          room: room,
           onTap: () {
             Navigator.pushNamed(
               context,
               AppRoutes.chatRoom,
-              arguments: {
-                'roomId': index + 1,
-                'otherUserName': '사용자 ${index + 1}',
-              },
+              arguments: {'roomId': room.id, 'otherUserName': otherUserName},
             );
           },
         );

@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'auth_api.dart';
+part of 'book_api.dart';
 
 // **************************************************************************
 // RiverpodGenerator
@@ -9,43 +9,43 @@ part of 'auth_api.dart';
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
 
-@ProviderFor(authApi)
-final authApiProvider = AuthApiProvider._();
+@ProviderFor(bookApi)
+final bookApiProvider = BookApiProvider._();
 
-final class AuthApiProvider
-    extends $FunctionalProvider<AuthApi, AuthApi, AuthApi>
-    with $Provider<AuthApi> {
-  AuthApiProvider._()
+final class BookApiProvider
+    extends $FunctionalProvider<BookApi, BookApi, BookApi>
+    with $Provider<BookApi> {
+  BookApiProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
-        name: r'authApiProvider',
+        name: r'bookApiProvider',
         isAutoDispose: true,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
 
   @override
-  String debugGetCreateSourceHash() => _$authApiHash();
+  String debugGetCreateSourceHash() => _$bookApiHash();
 
   @$internal
   @override
-  $ProviderElement<AuthApi> $createElement($ProviderPointer pointer) =>
+  $ProviderElement<BookApi> $createElement($ProviderPointer pointer) =>
       $ProviderElement(pointer);
 
   @override
-  AuthApi create(Ref ref) {
-    return authApi(ref);
+  BookApi create(Ref ref) {
+    return bookApi(ref);
   }
 
   /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(AuthApi value) {
+  Override overrideWithValue(BookApi value) {
     return $ProviderOverride(
       origin: this,
-      providerOverride: $SyncValueProvider<AuthApi>(value),
+      providerOverride: $SyncValueProvider<BookApi>(value),
     );
   }
 }
 
-String _$authApiHash() => r'edebbdcdb71ecb7e70071ec87c4ac84903396d8d';
+String _$bookApiHash() => r'ba40c6fb7610275a23cc7df81dea9da544817db9';

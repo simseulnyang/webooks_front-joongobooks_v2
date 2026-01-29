@@ -16,7 +16,13 @@ Dio dio(Ref ref) {
   final logger = ref.watch(loggerProvider);
 
   // AuthInterceptor 추가
-  apiClient.addInterceptor(AuthInterceptor(tokenStorage, logger));
+  apiClient.addInterceptor(
+    AuthInterceptor(
+      tokenStorage: tokenStorage,
+      logger: logger,
+      dio: apiClient.dio,
+    ),
+  );
 
   return apiClient.dio;
 }

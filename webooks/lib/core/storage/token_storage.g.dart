@@ -11,7 +11,7 @@ part of 'token_storage.dart';
 /// TokenStorage Provider
 
 @ProviderFor(tokenStorage)
-const tokenStorageProvider = TokenStorageProvider._();
+final tokenStorageProvider = TokenStorageProvider._();
 
 /// TokenStorage Provider
 
@@ -19,7 +19,7 @@ final class TokenStorageProvider
     extends $FunctionalProvider<TokenStorage, TokenStorage, TokenStorage>
     with $Provider<TokenStorage> {
   /// TokenStorage Provider
-  const TokenStorageProvider._()
+  TokenStorageProvider._()
     : super(
         from: null,
         argument: null,

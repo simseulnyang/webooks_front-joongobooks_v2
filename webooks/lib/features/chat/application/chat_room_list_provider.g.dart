@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'auth_provider.dart';
+part of 'chat_room_list_provider.dart';
 
 // **************************************************************************
 // RiverpodGenerator
@@ -9,50 +9,51 @@ part of 'auth_provider.dart';
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
 
-@ProviderFor(Auth)
-final authProvider = AuthProvider._();
+@ProviderFor(ChatRoomList)
+final chatRoomListProvider = ChatRoomListProvider._();
 
-final class AuthProvider extends $NotifierProvider<Auth, AuthState> {
-  AuthProvider._()
+final class ChatRoomListProvider
+    extends $NotifierProvider<ChatRoomList, ChatRoomListState> {
+  ChatRoomListProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
-        name: r'authProvider',
+        name: r'chatRoomListProvider',
         isAutoDispose: true,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
 
   @override
-  String debugGetCreateSourceHash() => _$authHash();
+  String debugGetCreateSourceHash() => _$chatRoomListHash();
 
   @$internal
   @override
-  Auth create() => Auth();
+  ChatRoomList create() => ChatRoomList();
 
   /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(AuthState value) {
+  Override overrideWithValue(ChatRoomListState value) {
     return $ProviderOverride(
       origin: this,
-      providerOverride: $SyncValueProvider<AuthState>(value),
+      providerOverride: $SyncValueProvider<ChatRoomListState>(value),
     );
   }
 }
 
-String _$authHash() => r'29ce7934f7236e0a33b5cddaca294f06f1545c72';
+String _$chatRoomListHash() => r'0c2fd59e8cfca8084d53f6043338ebf9489733a2';
 
-abstract class _$Auth extends $Notifier<AuthState> {
-  AuthState build();
+abstract class _$ChatRoomList extends $Notifier<ChatRoomListState> {
+  ChatRoomListState build();
   @$mustCallSuper
   @override
   void runBuild() {
-    final ref = this.ref as $Ref<AuthState, AuthState>;
+    final ref = this.ref as $Ref<ChatRoomListState, ChatRoomListState>;
     final element =
         ref.element
             as $ClassProviderElement<
-              AnyNotifier<AuthState, AuthState>,
-              AuthState,
+              AnyNotifier<ChatRoomListState, ChatRoomListState>,
+              ChatRoomListState,
               Object?,
               Object?
             >;

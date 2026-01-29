@@ -5,6 +5,7 @@ import '../features/auth/presentation/login_screen.dart';
 import '../features/shell/presentation/main_shell_screen.dart';
 import '../features/books/presentation/screens/book_detail_screen.dart';
 import '../features/books/presentation/screens/book_edit_screen.dart';
+import '../features/books/presentation/screens/book_create_screen.dart';
 import '../features/chat/presentation/screens/chat_room_screen.dart';
 import '../features/profile/presentation/profile_edit_screen.dart';
 
@@ -15,21 +16,15 @@ class AppRouter {
     switch (settings.name) {
       // Splash
       case AppRoutes.splash:
-        return MaterialPageRoute(
-          builder: (_) => const SplashScreen(),
-        );
+        return MaterialPageRoute(builder: (_) => const SplashScreen());
 
       // Auth
       case AppRoutes.login:
-        return MaterialPageRoute(
-          builder: (_) => const LoginScreen(),
-        );
+        return MaterialPageRoute(builder: (_) => const LoginScreen());
 
       // Main Shell (하단 탭 포함)
       case AppRoutes.mainShell:
-        return MaterialPageRoute(
-          builder: (_) => const MainShellScreen(),
-        );
+        return MaterialPageRoute(builder: (_) => const MainShellScreen());
 
       // Book Detail
       case AppRoutes.bookDetail:
@@ -37,6 +32,10 @@ class AppRouter {
         return MaterialPageRoute(
           builder: (_) => BookDetailScreen(bookId: bookId),
         );
+
+      // Book Create (새로 추가)
+      case AppRoutes.bookCreate:
+        return MaterialPageRoute(builder: (_) => const BookCreateScreen());
 
       // Book Edit
       case AppRoutes.bookEdit:
@@ -57,18 +56,14 @@ class AppRouter {
 
       // Profile Edit
       case AppRoutes.profileEdit:
-        return MaterialPageRoute(
-          builder: (_) => const ProfileEditScreen(),
-        );
+        return MaterialPageRoute(builder: (_) => const ProfileEditScreen());
 
       // 404 - 잘못된 경로
       default:
         return MaterialPageRoute(
           builder: (_) => Scaffold(
             appBar: AppBar(title: const Text('404')),
-            body: const Center(
-              child: Text('페이지를 찾을 수 없습니다.'),
-            ),
+            body: const Center(child: Text('페이지를 찾을 수 없습니다.')),
           ),
         );
     }

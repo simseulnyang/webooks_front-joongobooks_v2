@@ -12,7 +12,7 @@ part of 'dio_provider.dart';
 /// 앱 전역에서 Dio 인스턴스를 재사용
 
 @ProviderFor(dio)
-const dioProvider = DioProvider._();
+final dioProvider = DioProvider._();
 
 /// Dio Provider
 /// 앱 전역에서 Dio 인스턴스를 재사용
@@ -21,7 +21,7 @@ final class DioProvider extends $FunctionalProvider<Dio, Dio, Dio>
     with $Provider<Dio> {
   /// Dio Provider
   /// 앱 전역에서 Dio 인스턴스를 재사용
-  const DioProvider._()
+  DioProvider._()
     : super(
         from: null,
         argument: null,
@@ -54,4 +54,4 @@ final class DioProvider extends $FunctionalProvider<Dio, Dio, Dio>
   }
 }
 
-String _$dioHash() => r'3d852646a186d442cf5691813ebde2c7b06dac9a';
+String _$dioHash() => r'ef35c27c611a33e4766b05bdf1ffa0294d8011c9';
