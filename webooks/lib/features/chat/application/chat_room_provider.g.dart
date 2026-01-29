@@ -58,7 +58,7 @@ final class ChatRoomProvider
   }
 }
 
-String _$chatRoomHash() => r'b4bbfa2f331419df2864e35eb2281f1a0328f84e';
+String _$chatRoomHash() => r'b30ba1e170e707d27d092a6cd05153e77493a9de';
 
 final class ChatRoomFamily extends $Family
     with

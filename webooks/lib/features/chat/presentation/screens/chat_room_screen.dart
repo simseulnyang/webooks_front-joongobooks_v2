@@ -7,8 +7,9 @@ import '../../../../shared/theme/app_text_styles.dart';
 import '../../../../shared/widgets/app_loading.dart';
 import '../../../../shared/widgets/error_view.dart';
 import '../../application/chat_room_provider.dart';
-import '../../application/chat_state.dart'; // ✅ ChatRoomState 타입 사용
-import '../../domain/models/chat_room_detail.dart'; // ✅ room 타입 명시(선택)
+import '../../application/chat_room_list_provider.dart'; // ✅ 추가: 목록 뱃지 갱신용
+import '../../application/chat_state.dart';
+import '../../domain/models/chat_room_detail.dart';
 import '../widgets/message_bubble.dart';
 
 class ChatRoomScreen extends ConsumerStatefulWidget {
@@ -29,11 +30,13 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
 
+  bool _didMarkReadOnce = false; // ✅ 중복 호출 방지
+
   @override
   void initState() {
     super.initState();
 
-    // ✅ 화면 진입 후 1프레임 뒤에 refresh 트리거 (provider lifecycle 안전)
+    // ✅ 여기서는 listen 금지. 명령(refresh)만 OK.
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       final notifier = ref.read(chatRoomProvider(widget.roomId).notifier);
       await notifier.refresh();
@@ -49,8 +52,50 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // ✅ listen은 build 안에서만!
+    ref.listen<ChatRoomState>(chatRoomProvider(widget.roomId), (
+      prev,
+      next,
+    ) async {
+      final myId = ref.read(authProvider).user?.id;
+
+      // 1) 방/메시지가 준비되고, 내 id도 있을 때
+      if (myId == null) return;
+      if (next.room == null) return;
+      if (next.messages.isEmpty) return;
+
+      // 2) 아직 읽음처리 안 했고, 연결이 어느 정도 된 상태면(선택)
+      if (_didMarkReadOnce) return;
+
+      // ✅ 내가 받은(상대가 보낸) 안 읽은 메시지 id 모으기
+      final unreadIds = next.messages
+          .where((m) => !m.isRead && m.sender != myId)
+          .where((m) => m.id > 0) // temp 메시지(-id) 제외
+          .map((m) => m.id)
+          .toList();
+
+      if (unreadIds.isEmpty) {
+        _didMarkReadOnce = true; // 읽을 게 없으면 한 번만 체크하고 끝
+        return;
+      }
+
+      // ✅ provider 메서드 호출(읽음 처리)
+      ref
+          .read(chatRoomProvider(widget.roomId).notifier)
+          .markMessagesAsRead(unreadIds);
+
+      // ✅ 뱃지 갱신(목록 다시 로드)
+      // 너무 자주 호출되면 부담이니, 읽음 처리 후 1회만
+      ref.read(chatRoomListProvider.notifier).refresh();
+
+      _didMarkReadOnce = true;
+    });
+
     final ChatRoomState chatState = ref.watch(chatRoomProvider(widget.roomId));
     final authState = ref.watch(authProvider);
+
+    final ChatRoomDetail? room = chatState.room;
+    final String bookTitle = room?.book.title ?? '';
 
     return Scaffold(
       appBar: AppBar(
@@ -58,6 +103,15 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(widget.otherUserName),
+            if (bookTitle.isNotEmpty)
+              Text(
+                bookTitle,
+                style: AppTextStyles.bodySmall.copyWith(
+                  color: AppColors.textHint,
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
             if (!chatState.isConnected)
               Text(
                 '연결 중...',
@@ -95,29 +149,25 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
   }
 
   Widget _buildMessageList(ChatRoomState chatState, int? currentUserId) {
-    // 1) 초기 로딩
     if (chatState.isLoading && chatState.messages.isEmpty) {
       return const AppLoading(message: '메시지를 불러오는 중...');
     }
 
-    // 2) 에러
     if (chatState.error != null && chatState.messages.isEmpty) {
       return ErrorView(
         message: chatState.error!,
         onRetry: () {
+          _didMarkReadOnce = false; // ✅ 재시도 시 초기화
           ref.read(chatRoomProvider(widget.roomId).notifier).refresh();
         },
       );
     }
 
-    // ✅ room(상세) 아직 안 들어온 경우 방어
     final ChatRoomDetail? room = chatState.room;
-    if (room == null) {
-      // 메시지가 이미 있는데 room만 null이면 이상하긴 하지만, 안전하게 처리
+    if (room == null && chatState.messages.isEmpty) {
       return const AppLoading(message: '채팅방 정보를 불러오는 중...');
     }
 
-    // 3) 빈 메시지
     if (chatState.messages.isEmpty) {
       return Center(
         child: Text(
@@ -133,14 +183,32 @@ class _ChatRoomScreenState extends ConsumerState<ChatRoomScreen> {
       itemCount: chatState.messages.length,
       itemBuilder: (context, index) {
         final message = chatState.messages[index];
-
         final isMine =
             (currentUserId != null) && (message.sender == currentUserId);
 
-        return MessageBubble(
-          message: message,
-          isMine: isMine,
-          room: room, // ✅ ChatRoomDetail 전달
+        // ✅ 상대 메시지에 username 표시
+        final senderName = message.senderUsername.isNotEmpty
+            ? message.senderUsername
+            : widget.otherUserName;
+
+        return Column(
+          crossAxisAlignment: isMine
+              ? CrossAxisAlignment.end
+              : CrossAxisAlignment.start,
+          children: [
+            if (!isMine)
+              Padding(
+                padding: const EdgeInsets.only(left: 4, bottom: 4),
+                child: Text(
+                  senderName,
+                  style: AppTextStyles.bodySmall.copyWith(
+                    color: AppColors.textHint,
+                  ),
+                ),
+              ),
+            MessageBubble(message: message, isMine: isMine, room: room),
+            const SizedBox(height: 10),
+          ],
         );
       },
     );

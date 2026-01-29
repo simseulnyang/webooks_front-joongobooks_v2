@@ -150,12 +150,16 @@ class _ChatListScreenState extends ConsumerState<ChatListScreen> {
         final otherUserName = room.otherUser?.username ?? '알 수 없음';
         return ChatRoomTile(
           room: room,
-          onTap: () {
-            Navigator.pushNamed(
+          onTap: () async {
+            final result = await Navigator.pushNamed(
               context,
               AppRoutes.chatRoom,
               arguments: {'roomId': room.id, 'otherUserName': otherUserName},
             );
+
+            if (result == true) {
+              await ref.read(chatRoomListProvider.notifier).refresh();
+            }
           },
         );
       },

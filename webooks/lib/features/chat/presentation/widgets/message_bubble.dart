@@ -10,7 +10,7 @@ class MessageBubble extends StatelessWidget {
   final Message message;
   final bool isMine;
 
-  final ChatRoomDetail room;
+  final ChatRoomDetail? room;
 
   const MessageBubble({
     super.key,
@@ -62,7 +62,14 @@ class MessageBubble extends StatelessWidget {
     );
   }
 
-  Widget _buildProfileImage(Message message, ChatRoomDetail room) {
+  Widget _buildProfileImage(Message message, ChatRoomDetail? room) {
+    if (room == null) {
+      return const CircleAvatar(
+        radius: 18,
+        child: Icon(Icons.person, size: 18),
+      );
+    }
+
     final ChatUser user = (message.sender == room.buyer.id)
         ? room.buyer
         : room.seller;
@@ -70,9 +77,9 @@ class MessageBubble extends StatelessWidget {
     final imageUrl = user.profileImage;
 
     if (imageUrl.isNotEmpty) {
-      return CircleAvatar(radius: 16, backgroundImage: NetworkImage(imageUrl));
+      return CircleAvatar(radius: 18, backgroundImage: NetworkImage(imageUrl));
     }
-    return const CircleAvatar(radius: 16, child: Icon(Icons.person, size: 20));
+    return const CircleAvatar(radius: 18, child: Icon(Icons.person, size: 20));
   }
 
   Widget _buildTimestamp() {

@@ -12,7 +12,7 @@ class ChatRoomTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final unreadCount = room.unreadCount ?? 0;
+    final unreadCount = room.unreadCount;
     final otherUserName = room.otherUser?.username ?? '알 수 없음';
 
     return InkWell(
