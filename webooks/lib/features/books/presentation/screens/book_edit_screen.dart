@@ -12,7 +12,6 @@ import '../../../../shared/widgets/error_view.dart';
 import '../../application/book_provider.dart';
 import '../../data/book_api.dart';
 
-/// 책 수정 화면
 class BookEditScreen extends ConsumerStatefulWidget {
   final int bookId;
 
@@ -24,55 +23,46 @@ class BookEditScreen extends ConsumerStatefulWidget {
 
 class _BookEditScreenState extends ConsumerState<BookEditScreen> {
   final _formKey = GlobalKey<FormState>();
-  late TextEditingController _titleController;
-  late TextEditingController _authorController;
-  late TextEditingController _publisherController;
-  late TextEditingController _originalPriceController;
-  late TextEditingController _sellingPriceController;
-  late TextEditingController _detailInfoController;
 
+  // Controllers
+  final _titleController = TextEditingController();
+  final _authorController = TextEditingController();
+  final _publisherController = TextEditingController();
+  final _originalPriceController = TextEditingController();
+  final _sellingPriceController = TextEditingController();
+  final _detailInfoController = TextEditingController();
+
+  // Dropdown values
   String _selectedCategory = 'Novel';
-  String _selectedCondition = '최상';
   String _selectedSaleCondition = 'For Sale';
-  File? _selectedImage;
-  bool _isSubmitting = false;
-  bool _isInitialized = false;
+  String _selectedCondition = '최상';
 
-  // 카테고리 옵션 (영문 -> 한글)
   final Map<String, String> _categoryOptions = {
+    'Novel': '소설',
     'Social Politic': '사회 정치',
     'Literary Fiction': '인문',
     'Child': '아동',
     'Travel': '여행',
     'History': '역사',
     'Art': '예술',
-    'Novel': '소설',
     'Poem': '시',
     'Science': '과학',
     'Fantasy': '판타지',
     'Magazine': '잡지',
   };
 
-  // 책 상태 옵션
-  final List<String> _conditionOptions = ['최상', '상', '중', '하'];
-
-  // 판매 상태 옵션 (영문 -> 한글)
   final Map<String, String> _saleConditionOptions = {
-    'For Sale': '판매중',
-    'Reserved': '예약중',
-    'Sold Out': '판매완료',
+    'For Sale': '판매 중',
+    'Reserved': '예약 중',
+    'Sold Out': '판매 완료',
   };
 
-  @override
-  void initState() {
-    super.initState();
-    _titleController = TextEditingController();
-    _authorController = TextEditingController();
-    _publisherController = TextEditingController();
-    _originalPriceController = TextEditingController();
-    _sellingPriceController = TextEditingController();
-    _detailInfoController = TextEditingController();
-  }
+  final List<String> _conditionOptions = ['최상', '상', '중', '하'];
+
+  // ✅ 이미지 관련
+  File? _selectedImage; // 새로 선택한 이미지
+  bool _isFormInitialized = false;
+  bool _isSubmitting = false;
 
   @override
   void dispose() {
@@ -85,33 +75,30 @@ class _BookEditScreenState extends ConsumerState<BookEditScreen> {
     super.dispose();
   }
 
-  /// 기존 책 정보로 폼 초기화
-  void _initializeForm(book) {
-    if (_isInitialized) return;
+  void _initializeForm(dynamic book) {
+    if (_isFormInitialized || book == null) return;
 
-    _titleController.text = book.title;
-    _authorController.text = book.author;
-    _publisherController.text = book.publisher;
-    _originalPriceController.text = book.originalPrice.toString();
-    _sellingPriceController.text = book.sellingPrice.toString();
-    _detailInfoController.text = book.detailInfo;
-    _selectedCategory = book.category;
-    _selectedCondition = book.condition;
-    _selectedSaleCondition = book.saleCondition;
+    _titleController.text = book.title ?? '';
+    _authorController.text = book.author ?? '';
+    _publisherController.text = book.publisher ?? '';
+    _originalPriceController.text = book.originalPrice?.toString() ?? '';
+    _sellingPriceController.text = book.sellingPrice?.toString() ?? '';
+    _detailInfoController.text = book.detailInfo ?? '';
+    _selectedCategory = book.category ?? 'Novel';
+    _selectedSaleCondition = book.saleCondition ?? 'For Sale';
+    _selectedCondition = book.condition ?? '최상';
 
-    _isInitialized = true;
+    _isFormInitialized = true;
   }
 
   @override
   Widget build(BuildContext context) {
     final detailState = ref.watch(bookDetailProvider(widget.bookId));
 
-    // 로딩 중
     if (detailState.isLoading) {
       return const Scaffold(body: AppLoading(message: '책 정보를 불러오는 중...'));
     }
 
-    // 에러
     if (detailState.error != null || detailState.book == null) {
       return Scaffold(
         appBar: AppBar(title: const Text('책 수정')),
@@ -138,7 +125,7 @@ class _BookEditScreenState extends ConsumerState<BookEditScreen> {
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
-                  // 책 이미지
+                  // ✅ 책 이미지 (기존 이미지 표시 + 변경 가능)
                   _buildImageSection(detailState.book!.bookImage),
                   const SizedBox(height: 24),
 
@@ -216,6 +203,29 @@ class _BookEditScreenState extends ConsumerState<BookEditScreen> {
                   ),
                   const SizedBox(height: 16),
 
+                  // 판매 상태
+                  DropdownButtonFormField<String>(
+                    initialValue: _selectedSaleCondition,
+                    decoration: const InputDecoration(
+                      labelText: '판매 상태',
+                      prefixIcon: Icon(Icons.sell),
+                    ),
+                    items: _saleConditionOptions.entries
+                        .map(
+                          (entry) => DropdownMenuItem(
+                            value: entry.key,
+                            child: Text(entry.value),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (value) {
+                      setState(() {
+                        _selectedSaleCondition = value!;
+                      });
+                    },
+                  ),
+                  const SizedBox(height: 16),
+
                   // 책 상태
                   DropdownButtonFormField<String>(
                     initialValue: _selectedCondition,
@@ -244,9 +254,9 @@ class _BookEditScreenState extends ConsumerState<BookEditScreen> {
                     controller: _originalPriceController,
                     decoration: const InputDecoration(
                       labelText: '원가',
-                      hintText: '원래 가격을 입력하세요',
-                      prefixText: '₩ ',
+                      hintText: '원가를 입력하세요',
                       prefixIcon: Icon(Icons.attach_money),
+                      suffixText: '원',
                     ),
                     keyboardType: TextInputType.number,
                     validator: (value) {
@@ -254,7 +264,7 @@ class _BookEditScreenState extends ConsumerState<BookEditScreen> {
                         return '원가를 입력해주세요';
                       }
                       if (int.tryParse(value.replaceAll(',', '')) == null) {
-                        return '올바른 금액을 입력해주세요';
+                        return '올바른 숫자를 입력해주세요';
                       }
                       return null;
                     },
@@ -266,9 +276,9 @@ class _BookEditScreenState extends ConsumerState<BookEditScreen> {
                     controller: _sellingPriceController,
                     decoration: const InputDecoration(
                       labelText: '판매가',
-                      hintText: '판매 가격을 입력하세요',
-                      prefixText: '₩ ',
-                      prefixIcon: Icon(Icons.sell),
+                      hintText: '판매가를 입력하세요',
+                      prefixIcon: Icon(Icons.money),
+                      suffixText: '원',
                     ),
                     keyboardType: TextInputType.number,
                     validator: (value) {
@@ -276,32 +286,9 @@ class _BookEditScreenState extends ConsumerState<BookEditScreen> {
                         return '판매가를 입력해주세요';
                       }
                       if (int.tryParse(value.replaceAll(',', '')) == null) {
-                        return '올바른 금액을 입력해주세요';
+                        return '올바른 숫자를 입력해주세요';
                       }
                       return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-
-                  // 판매 상태
-                  DropdownButtonFormField<String>(
-                    initialValue: _selectedSaleCondition,
-                    decoration: const InputDecoration(
-                      labelText: '판매 상태',
-                      prefixIcon: Icon(Icons.shopping_cart),
-                    ),
-                    items: _saleConditionOptions.entries
-                        .map(
-                          (entry) => DropdownMenuItem(
-                            value: entry.key,
-                            child: Text(entry.value),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        _selectedSaleCondition = value!;
-                      });
                     },
                   ),
                   const SizedBox(height: 16),
@@ -340,6 +327,7 @@ class _BookEditScreenState extends ConsumerState<BookEditScreen> {
     );
   }
 
+  /// ✅ 이미지 섹션 (기존 이미지 표시 + 새로 선택 가능)
   Widget _buildImageSection(String? currentImageUrl) {
     return GestureDetector(
       onTap: _pickImage,
@@ -396,6 +384,7 @@ class _BookEditScreenState extends ConsumerState<BookEditScreen> {
     );
   }
 
+  /// ✅ 이미지 선택
   Future<void> _pickImage() async {
     final ImagePicker picker = ImagePicker();
     final XFile? image = await picker.pickImage(
@@ -412,6 +401,7 @@ class _BookEditScreenState extends ConsumerState<BookEditScreen> {
     }
   }
 
+  /// ✅ 책 수정 (이미지 포함)
   Future<void> _handleSubmit() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -434,9 +424,13 @@ class _BookEditScreenState extends ConsumerState<BookEditScreen> {
         'detail_info': _detailInfoController.text.trim(),
       };
 
-      // TODO: 이미지가 변경되었으면 multipart/form-data로 전송 필요
+      // ✅ 이미지 경로 전달 (새로 선택한 경우만)
       final bookApi = ref.read(bookApiProvider);
-      await bookApi.updateBook(widget.bookId, bookData);
+      await bookApi.updateBook(
+        widget.bookId,
+        bookData,
+        imagePath: _selectedImage?.path,
+      );
 
       if (mounted) {
         // 상세 화면 새로고침

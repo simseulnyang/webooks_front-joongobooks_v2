@@ -11,7 +11,6 @@ import '../../../../shared/widgets/app_loading.dart';
 import '../../application/book_provider.dart';
 import '../../data/book_api.dart';
 
-/// 책 등록 화면
 class BookCreateScreen extends ConsumerStatefulWidget {
   const BookCreateScreen({super.key});
 
@@ -21,6 +20,8 @@ class BookCreateScreen extends ConsumerStatefulWidget {
 
 class _BookCreateScreenState extends ConsumerState<BookCreateScreen> {
   final _formKey = GlobalKey<FormState>();
+
+  // Controllers
   final _titleController = TextEditingController();
   final _authorController = TextEditingController();
   final _publisherController = TextEditingController();
@@ -28,28 +29,30 @@ class _BookCreateScreenState extends ConsumerState<BookCreateScreen> {
   final _sellingPriceController = TextEditingController();
   final _detailInfoController = TextEditingController();
 
+  // Dropdown values
   String _selectedCategory = 'Novel';
   String _selectedCondition = '최상';
-  File? _selectedImage;
-  bool _isSubmitting = false;
 
-  // 카테고리 옵션 (영문 -> 한글)
   final Map<String, String> _categoryOptions = {
+    'Novel': '소설',
     'Social Politic': '사회 정치',
     'Literary Fiction': '인문',
     'Child': '아동',
     'Travel': '여행',
     'History': '역사',
     'Art': '예술',
-    'Novel': '소설',
     'Poem': '시',
     'Science': '과학',
     'Fantasy': '판타지',
     'Magazine': '잡지',
   };
 
-  // 책 상태 옵션
   final List<String> _conditionOptions = ['최상', '상', '중', '하'];
+
+  // ✅ 이미지 관련
+  File? _selectedImage;
+
+  bool _isSubmitting = false;
 
   @override
   void dispose() {
@@ -73,7 +76,7 @@ class _BookCreateScreenState extends ConsumerState<BookCreateScreen> {
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
-                  // 책 이미지 선택
+                  // ✅ 책 이미지 선택
                   _buildImageSection(),
                   const SizedBox(height: 24),
 
@@ -179,9 +182,9 @@ class _BookCreateScreenState extends ConsumerState<BookCreateScreen> {
                     controller: _originalPriceController,
                     decoration: const InputDecoration(
                       labelText: '원가',
-                      hintText: '원래 가격을 입력하세요',
-                      prefixText: '₩ ',
+                      hintText: '원가를 입력하세요',
                       prefixIcon: Icon(Icons.attach_money),
+                      suffixText: '원',
                     ),
                     keyboardType: TextInputType.number,
                     validator: (value) {
@@ -189,7 +192,7 @@ class _BookCreateScreenState extends ConsumerState<BookCreateScreen> {
                         return '원가를 입력해주세요';
                       }
                       if (int.tryParse(value.replaceAll(',', '')) == null) {
-                        return '올바른 금액을 입력해주세요';
+                        return '올바른 숫자를 입력해주세요';
                       }
                       return null;
                     },
@@ -201,9 +204,9 @@ class _BookCreateScreenState extends ConsumerState<BookCreateScreen> {
                     controller: _sellingPriceController,
                     decoration: const InputDecoration(
                       labelText: '판매가',
-                      hintText: '판매 가격을 입력하세요',
-                      prefixText: '₩ ',
-                      prefixIcon: Icon(Icons.sell),
+                      hintText: '판매가를 입력하세요',
+                      prefixIcon: Icon(Icons.money),
+                      suffixText: '원',
                     ),
                     keyboardType: TextInputType.number,
                     validator: (value) {
@@ -211,7 +214,7 @@ class _BookCreateScreenState extends ConsumerState<BookCreateScreen> {
                         return '판매가를 입력해주세요';
                       }
                       if (int.tryParse(value.replaceAll(',', '')) == null) {
-                        return '올바른 금액을 입력해주세요';
+                        return '올바른 숫자를 입력해주세요';
                       }
                       return null;
                     },
@@ -252,6 +255,7 @@ class _BookCreateScreenState extends ConsumerState<BookCreateScreen> {
     );
   }
 
+  /// ✅ 이미지 선택 UI
   Widget _buildImageSection() {
     return GestureDetector(
       onTap: _pickImage,
@@ -294,6 +298,7 @@ class _BookCreateScreenState extends ConsumerState<BookCreateScreen> {
     );
   }
 
+  /// ✅ 이미지 선택
   Future<void> _pickImage() async {
     final ImagePicker picker = ImagePicker();
     final XFile? image = await picker.pickImage(
@@ -310,6 +315,7 @@ class _BookCreateScreenState extends ConsumerState<BookCreateScreen> {
     }
   }
 
+  /// ✅ 책 등록 (이미지 포함)
   Future<void> _handleSubmit() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -331,10 +337,9 @@ class _BookCreateScreenState extends ConsumerState<BookCreateScreen> {
         'detail_info': _detailInfoController.text.trim(),
       };
 
-      // TODO: 이미지가 있으면 multipart/form-data로 전송 필요
-      // 현재는 JSON만 전송
+      // ✅ 이미지 경로 전달
       final bookApi = ref.read(bookApiProvider);
-      await bookApi.createBook(bookData);
+      await bookApi.createBook(bookData, imagePath: _selectedImage?.path);
 
       if (mounted) {
         // 책 목록 새로고침

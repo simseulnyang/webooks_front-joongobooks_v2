@@ -90,11 +90,33 @@ class BookApi {
   }
 
   /// 책 등록
-  Future<Book> createBook(Map<String, dynamic> bookData) async {
+  Future<Book> createBook(
+    Map<String, dynamic> bookData, {
+    String? imagePath,
+  }) async {
     try {
       _logger.d('📝 책 등록 - title: ${bookData['title']}');
 
-      final response = await _dio.post('books/create/', data: bookData);
+      dynamic requestData;
+
+      if (imagePath != null && imagePath.isNotEmpty) {
+        _logger.d('📷 이미지 포함 - path: $imagePath');
+
+        final formData = FormData.fromMap({
+          ...bookData,
+          'book_image': await MultipartFile.fromFile(
+            imagePath,
+            filename: imagePath.split('/').last,
+          ),
+        });
+
+        requestData = formData;
+      } else {
+        _logger.d('📄 이미지 없이 등록');
+        requestData = bookData;
+      }
+
+      final response = await _dio.post('books/create/', data: requestData);
 
       _logger.i('✅ 책 등록 성공: ${response.data['title']}');
 
@@ -106,13 +128,36 @@ class BookApi {
   }
 
   /// 책 수정
-  Future<Book> updateBook(int bookId, Map<String, dynamic> bookData) async {
+  Future<Book> updateBook(
+    int bookId,
+    Map<String, dynamic> bookData, {
+    String? imagePath,
+  }) async {
     try {
       _logger.d('✏️ 책 수정 - ID: $bookId');
 
+      dynamic requestData;
+
+      if (imagePath != null && imagePath.isNotEmpty) {
+        _logger.d('📷 이미지 변경 - path: $imagePath');
+
+        final formData = FormData.fromMap({
+          ...bookData,
+          'book_image': await MultipartFile.fromFile(
+            imagePath,
+            filename: imagePath.split('/').last,
+          ),
+        });
+
+        requestData = formData;
+      } else {
+        _logger.d('📄 이미지 변경 없음');
+        requestData = bookData;
+      }
+
       final response = await _dio.patch(
         'books/update/$bookId/',
-        data: bookData,
+        data: requestData,
       );
 
       _logger.i('✅ 책 수정 성공: ${response.data['title']}');
