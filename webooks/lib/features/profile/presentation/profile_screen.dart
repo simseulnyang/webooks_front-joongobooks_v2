@@ -7,6 +7,9 @@ import '../../../shared/theme/app_text_styles.dart';
 import '../../../shared/widgets/app_loading.dart';
 import '../../../shared/widgets/app_button.dart';
 
+import '../../books/application/book_provider.dart';
+import '../../books/presentation/screens/favorite_book_list_screen.dart';
+
 /// 프로필 화면 (내정보 탭)
 /// 로그인 여부에 따라 다른 화면 표시
 class ProfileScreen extends ConsumerWidget {
@@ -119,7 +122,12 @@ class _ProfileLoggedInView extends ConsumerWidget {
             icon: Icons.favorite_outline,
             title: '좋아요한 책',
             onTap: () {
-              // TODO: 좋아요한 책 목록
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const FavoriteBookListScreen(),
+                ),
+              );
             },
           ),
 

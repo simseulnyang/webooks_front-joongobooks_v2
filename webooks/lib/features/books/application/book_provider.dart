@@ -2,7 +2,6 @@ import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:dio/dio.dart';
 
 import '../data/book_api.dart';
-import '../domain/models/book.dart';
 import 'favorite_state.dart';
 import '../../../core/error/api_error.dart';
 import '../../../core/utils/logger_provider.dart';
