@@ -1,9 +1,11 @@
-import 'package:dio/dio.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
+import 'package:dio/dio.dart';
 
+import '../data/book_api.dart';
+import '../domain/models/book.dart';
+import 'favorite_state.dart';
 import '../../../core/error/api_error.dart';
 import '../../../core/utils/logger_provider.dart';
-import '../data/book_api.dart';
 import 'book_state.dart';
 
 part 'book_provider.g.dart';
@@ -245,20 +247,20 @@ class BookDetail extends _$BookDetail {
 @riverpod
 class FavoriteBookList extends _$FavoriteBookList {
   @override
-  BookListState build() {
-    loadFavorites();
-    return const BookListState();
+  FavoriteState build() {
+    Future.microtask(loadFavorites);
+    return const FavoriteState();
   }
 
   Future<void> loadFavorites() async {
     state = state.copyWith(isLoading: true, error: null);
 
+    final logger = ref.read(loggerProvider);
+
     try {
+      logger.d('💖 좋아요 목록 로드 시작');
+
       final bookApi = ref.read(bookApiProvider);
-      final logger = ref.read(loggerProvider);
-
-      logger.d('🔄 좋아요 목록 로드 시작');
-
       final response = await bookApi.getFavoriteBooks(page: 1);
 
       state = state.copyWith(
@@ -269,13 +271,13 @@ class FavoriteBookList extends _$FavoriteBookList {
         totalCount: response.count,
       );
 
-      logger.d('✅ 좋아요 목록 로드 완료: ${response.results.length}건');
+      logger.d('✅ 좋아요 목록 로드 완료');
     } on DioException catch (e) {
-      final logger = ref.read(loggerProvider);
-      logger.e('❌ 좋아요 목록 로드 실패', error: e);
-
       final apiError = ApiError.fromDioException(e);
       state = state.copyWith(isLoading: false, error: apiError.message);
+    } catch (e) {
+      logger.e('❌ 좋아요 목록 로드 실패', error: e);
+      state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
 
@@ -285,9 +287,8 @@ class FavoriteBookList extends _$FavoriteBookList {
     state = state.copyWith(isLoadingMore: true);
 
     try {
-      final bookApi = ref.read(bookApiProvider);
       final nextPage = state.currentPage + 1;
-
+      final bookApi = ref.read(bookApiProvider);
       final response = await bookApi.getFavoriteBooks(page: nextPage);
 
       state = state.copyWith(
@@ -296,10 +297,7 @@ class FavoriteBookList extends _$FavoriteBookList {
         currentPage: nextPage,
         hasMore: response.hasNext,
       );
-    } on DioException catch (e) {
-      final logger = ref.read(loggerProvider);
-      logger.e('❌ 다음 페이지 로드 실패', error: e);
-
+    } catch (_) {
       state = state.copyWith(isLoadingMore: false);
     }
   }

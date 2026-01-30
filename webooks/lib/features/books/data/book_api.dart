@@ -1,10 +1,11 @@
+import 'package:riverpod_annotation/riverpod_annotation.dart';
 import 'package:dio/dio.dart';
 import 'package:logger/logger.dart';
-import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 import '../../../core/network/dio_provider.dart';
 import '../../../core/utils/logger_provider.dart';
 import '../domain/models/book.dart';
+import '../domain/models/favorite.dart';
 
 part 'book_api.g.dart';
 
@@ -154,41 +155,20 @@ class BookApi {
   }
 
   /// 좋아요한 책 목록 조회
-  Future<PaginatedResponse<BookListItem>> getFavoriteBooks({
+  Future<FavoritePaginatedResponse<BookListItem>> getFavoriteBooks({
     int page = 1,
   }) async {
     try {
-      _logger.d('💖 좋아요 목록 조회 - page: $page');
-
       final response = await _dio.get(
         'books/favorites/',
         queryParameters: {'page': page},
       );
 
-      _logger.i('✅ 좋아요 목록 조회 성공: ${response.data['count']}건');
-      _logger.d('응답 데이터: ${response.data}');
-
-      // Favorite 모델의 book 필드를 추출
-      final results = (response.data['results'] as List).map((item) {
-        _logger.d('Favorite 아이템: $item');
-        final bookData = item['book'] as Map<String, dynamic>;
-        _logger.d('Book 데이터: $bookData');
-        return BookListItem.fromJson(bookData);
-      }).toList();
-
-      return PaginatedResponse<BookListItem>(
-        count: response.data['count'],
-        next: response.data['next'],
-        previous: response.data['previous'],
-        results: results,
+      return FavoritePaginatedResponse.fromJson(
+        response.data,
+        (json) => BookListItem.fromJson(json as Map<String, dynamic>),
       );
-    } on DioException catch (e) {
-      _logger.e('❌ 좋아요 목록 조회 실패: ${e.response?.data ?? e.message}');
-      _logger.e('요청 URL: ${e.requestOptions.uri}');
-      _logger.e('응답 코드: ${e.response?.statusCode}');
-      rethrow;
-    } catch (e, stackTrace) {
-      _logger.e('❌ 좋아요 목록 파싱 실패', error: e, stackTrace: stackTrace);
+    } on DioException {
       rethrow;
     }
   }

@@ -24,5 +24,18 @@ Dio dio(Ref ref) {
     ),
   );
 
+  // ✅ (추가) Dio 레벨 로그 인터셉터: request headers/response body 확인용
+  apiClient.dio.interceptors.add(
+    LogInterceptor(
+      request: true,
+      requestHeader: true,
+      requestBody: true,
+      responseHeader: false,
+      responseBody: true,
+      error: true,
+      logPrint: (obj) => logger.d(obj.toString()),
+    ),
+  );
+
   return apiClient.dio;
 }

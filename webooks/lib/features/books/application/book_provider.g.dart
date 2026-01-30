@@ -180,7 +180,7 @@ final favoriteBookListProvider = FavoriteBookListProvider._();
 
 /// 좋아요한 책 목록 Provider
 final class FavoriteBookListProvider
-    extends $NotifierProvider<FavoriteBookList, BookListState> {
+    extends $NotifierProvider<FavoriteBookList, FavoriteState> {
   /// 좋아요한 책 목록 Provider
   FavoriteBookListProvider._()
     : super(
@@ -201,29 +201,29 @@ final class FavoriteBookListProvider
   FavoriteBookList create() => FavoriteBookList();
 
   /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(BookListState value) {
+  Override overrideWithValue(FavoriteState value) {
     return $ProviderOverride(
       origin: this,
-      providerOverride: $SyncValueProvider<BookListState>(value),
+      providerOverride: $SyncValueProvider<FavoriteState>(value),
     );
   }
 }
 
-String _$favoriteBookListHash() => r'2204b473e2b366921ef9c52c4cd413dfbe660905';
+String _$favoriteBookListHash() => r'da9d1a24cadf8bebe87c426afb03428eee3782e1';
 
 /// 좋아요한 책 목록 Provider
 
-abstract class _$FavoriteBookList extends $Notifier<BookListState> {
-  BookListState build();
+abstract class _$FavoriteBookList extends $Notifier<FavoriteState> {
+  FavoriteState build();
   @$mustCallSuper
   @override
   void runBuild() {
-    final ref = this.ref as $Ref<BookListState, BookListState>;
+    final ref = this.ref as $Ref<FavoriteState, FavoriteState>;
     final element =
         ref.element
             as $ClassProviderElement<
-              AnyNotifier<BookListState, BookListState>,
-              BookListState,
+              AnyNotifier<FavoriteState, FavoriteState>,
+              FavoriteState,
               Object?,
               Object?
             >;

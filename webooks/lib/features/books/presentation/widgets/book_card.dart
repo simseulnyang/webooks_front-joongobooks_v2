@@ -83,7 +83,7 @@ class BookCard extends ConsumerWidget {
                       decoration: BoxDecoration(
                         color: _getStatusColor(
                           book.saleCondition,
-                        ).withOpacity(0.1),
+                        ).withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(4),
                       ),
                       child: Text(
