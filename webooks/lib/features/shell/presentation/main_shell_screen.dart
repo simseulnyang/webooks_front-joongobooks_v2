@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../books/application/book_provider.dart';
 import '../../books/presentation/screens/book_list_screen.dart';
 import '../../books/presentation/screens/favorite_book_list_screen.dart';
 import '../../chat/presentation/screens/chat_list_screen.dart';
@@ -28,16 +30,18 @@ class _MainShellScreenState extends ConsumerState<MainShellScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: IndexedStack(
-        index: _currentIndex,
-        children: _screens,
-      ),
+      body: IndexedStack(index: _currentIndex, children: _screens),
       bottomNavigationBar: BottomNavBar(
         currentIndex: _currentIndex,
         onTap: (index) {
           setState(() {
             _currentIndex = index;
           });
+
+          if (index == 1) {
+            debugPrint('💚 좋아요 탭 클릭 -> 강제 새로고침');
+            ref.read(favoriteBookListProvider.notifier).loadFavorites();
+          }
         },
       ),
     );
